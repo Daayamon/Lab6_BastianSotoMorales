@@ -1,0 +1,61 @@
+import random
+import socket
+#Para Calcular el máximo común divisor de 2 numeros
+def mcd(a, b):
+    while b:
+        a, b = b, a % b
+    return a
+#generar claves publica y privada
+def generar_claves():
+    p = 27
+    q = 13
+    n = p * q
+    phi = (p - 1) * (q - 1)
+    # e aleatorio 
+    e = random.randint(2, phi - 1)
+    while mcd(e, phi) != 1:
+        e = random.randint(2, phi - 1)
+    # Calcular d, el inverso phi
+    d = pow(e, -1, phi)
+    clave_publica = (n, e)
+    clave_privada = (n, d)
+    return clave_publica, clave_privada
+clave_publica, clave_privada = generar_claves()
+def cifrar(mensaje, clave_publica):
+    #Cifrae utilizando la clave pública
+    n, e = clave_publica
+    mensaje_cifrado = [pow(ord(char), e, n) for char in mensaje]
+    return mensaje_cifrado
+    #Descifrar utilizando la clave privada
+def descifrar(mensaje_cifrado, clave_privada):
+    n, d = clave_privada
+    mensaje_descifrado = ''.join([chr(pow(char, d, n)) for char in mensaje_cifrado])
+    return mensaje_descifrado
+
+def main():
+    # Configurar el servidor
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind(('127.0.0.1', 12345))
+    server.listen(1)
+    print("Esperando conexión...")
+    conn, addr = server.accept()
+    print("Conectado a", addr)
+    # Enviar la clave pública al cliente
+    conn.sendall(str(clave_publica).encode())
+    print("Clave Publica:", clave_publica)
+    # Recibir el mensaje cifrado del cliente
+    mensaje_cifrado= conn.recv(1024)
+    print("Mensaje cifrado recibido del cliente:", mensaje_cifrado)
+    # Desencriptar el mensaje
+    mensaje_descifrado = descifrar(mensaje_cifrado, clave_privada)
+    # Imprimir el mensaje desencriptado
+    print("Mensaje desencriptado:", mensaje_descifrado)
+    # Escribir el mensaje desencriptado en un archivo
+    with open("mensajeRecibidoRSA.txt", "w", encoding="utf-8") as file:
+        mensaje_cifrado_str = ''.join([chr(char) for char in mensaje_cifrado])
+        file.write(mensaje_cifrado_str)
+    # Cerrar la conexión
+    conn.close()
+
+if __name__ == "__main__":
+    main()

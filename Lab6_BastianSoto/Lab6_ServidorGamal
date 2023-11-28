@@ -1,0 +1,53 @@
+import socket
+import random
+# Parámetros para ElGamal
+p = 101
+g = random.randint(2, p - 1)  # Generar un número aleatorio
+a = random.randint(2, p - 2)  # Clave privada del emisor
+b = random.randint(2, p - 2)  # Clave privada del receptor
+K = pow(g, a, p)  # Clave pública
+clave_publica = (g, p, K)
+clave_privada = a
+def cifrar(mensaje, clave_publica):
+    p, g, h = clave_publica
+    k = random.randint(2, p - 2)  
+    c1 = pow(g, k, p)
+    s = pow(h, k, p)
+    c2 = [(ord(char) * s) % p for char in mensaje]
+    return c1, c2
+# Función para descifrar un mensaje cifrado
+def descifrar(mensaje_cifrado, b, clave_publica):
+    p, _, _ = clave_publica
+    c2 = mensaje_cifrado[1]
+    k = random.randint(2, p - 2)
+    s = pow(b, k, p)
+    s_inv = pow(s, -1, p)
+    # Calcular mensaje descifrado
+    mensaje_descifrado = "".join([chr((c * s_inv) % p) for c in [c2]])
+    return mensaje_descifrado
+def main():
+    # Configurar el servidor
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind(('127.0.0.1', 12345))
+    server.listen(1)
+    print("Esperando conexión...")
+    conn, addr = server.accept()
+    print("Conectado a", addr)
+    # Enviar la clave pública al cliente
+    conn.sendall(str(clave_publica).encode())
+    print("Clave Pública:", clave_publica)
+    # Recibir el mensaje cifrado del cliente
+    mensaje_cifrado = conn.recv(1024)
+    print("Mensaje cifrado recibido del cliente:", mensaje_cifrado)
+    # Desencriptar el mensaje
+    mensaje_descifrado = descifrar(mensaje_cifrado, clave_privada, clave_publica)
+    # Imprimir el mensaje desencriptado
+    print("Mensaje desencriptado:", mensaje_descifrado)
+    # Escribir el mensaje en un archivo
+    with open("mensajeRecibidoElGamal.txt", "wb") as file:
+        file.write(mensaje_cifrado)
+    # Cerrar la conexión
+    conn.close()
+
+if __name__ == "__main__":
+    main()

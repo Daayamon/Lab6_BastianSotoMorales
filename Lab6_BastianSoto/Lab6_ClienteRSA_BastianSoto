@@ -1,0 +1,39 @@
+import socket
+
+def cifrar(mensaje, clave_publica):
+    #Cifrar utilizando la clave pública
+    n, e = clave_publica
+    mensaje_cifrado = [pow(ord(char), e, n) for char in mensaje]
+    return mensaje_cifrado
+def descifrar(mensaje_cifrado, clave_privada):
+    #Descifrar utilizando la clave privada
+    n, d = clave_privada
+    mensaje_descifrado = ''.join([chr(pow(char, d, n)) for char in mensaje_cifrado])
+    return mensaje_descifrado
+
+def main():
+    # Configurar el cliente
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect(('127.0.0.1', 12345))
+    print("Conectado al servidor")
+
+    # Recibir la clave pública del servidor
+    clave_publica_str = client.recv(1024).decode()
+    clave_publica = eval(clave_publica_str)
+    print("Clave Pública recibida del servidor:", clave_publica)
+    # Leer el mensaje desde el archivo
+    with open("mensajeentrada.txt", "r") as file:
+        mensaje = file.read()
+    # Encriptar mensaje 
+    mensaje_cifrado = cifrar(mensaje, clave_publica)
+
+    # Enviar el mensaje cifrado al servidor
+    client.sendall(str(mensaje_cifrado).encode())
+
+    print("Mensaje cifrado enviado al servidor:", mensaje_cifrado)
+
+    # Cerrar la conexión
+    client.close()
+    
+if __name__ == "__main__":
+    main()

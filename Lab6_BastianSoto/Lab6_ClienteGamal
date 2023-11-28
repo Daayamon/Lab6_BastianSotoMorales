@@ -1,0 +1,46 @@
+import socket
+import random
+
+# Función para cifrar un mensaje
+def cifrar(mensaje, clave_publica):
+    p, g, h = clave_publica
+    k = random.randint(2, p - 2)  # Seleccionar un número aleatorio k
+    c1 = pow(g, k, p)
+    s = pow(h, k, p)
+    c2 = [(ord(char) * s) % p for char in mensaje]
+    return c1, c2
+
+
+# Función para descifrar un mensaje cifrado
+def descifrar(mensaje_cifrado, clave_privada, clave_publica):
+    p, _, _ = clave_publica
+    c1, c2 = mensaje_cifrado
+    s = pow(c1, clave_privada, p)
+    s_inv = pow(s, -1, p)  # La inversa modular de s
+    mensaje_descifrado = ''.join([chr((char * s_inv) % p) for char in c2])
+    return mensaje_descifrado
+
+
+def main():
+    # Configurar el cliente
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client.connect(('127.0.0.1', 12345))
+    print("Conectado al servidor")
+
+    # Recibir la clave pública del servidor
+    clave_publica_str = client.recv(1024).decode()
+    clave_publica = eval(clave_publica_str)
+    print("Clave Pública recibida del servidor:", clave_publica)
+    # Leer el mensaje desde el archivo
+    with open("mensajeentradagamal.txt", "r") as file:
+        mensaje = file.read()
+    # Encriptar el mensaje
+    mensaje_cifrado = cifrar(mensaje, clave_publica)
+    # Enviar el mensaje cifrado al servidor
+    client.sendall(str(mensaje_cifrado).encode())
+    print("Mensaje cifrado enviado al servidor:", mensaje_cifrado)
+    # Cerrar la conexión
+    client.close()
+    
+if __name__ == "__main__":
+    main()
